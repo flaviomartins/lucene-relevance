@@ -64,7 +64,7 @@ public class BM25SimilarityFactory extends SimilarityFactory {
     discountOverlaps = params.getBool("discountOverlaps", true);
     k1 = params.getFloat("k1", 1.2f);
     b = params.getFloat("b", 0.75f);
-    d = params.getFloat("d", 1.0f);
+    d = params.getFloat("d", 0);
     String m = params.get("model");
     model = BM25Model.valueOf(m);
   }
@@ -73,6 +73,9 @@ public class BM25SimilarityFactory extends SimilarityFactory {
   public Similarity getSimilarity() {
     BM25Similarity sim;
     if (model != null) {
+      if (d == 0) {
+    	  d = (model == BM25Model.L) ? 0.5f : 1.0f;
+      }
       sim = new BM25Similarity(k1, b, d, model);
     } else {
       sim = new BM25Similarity(k1, b);

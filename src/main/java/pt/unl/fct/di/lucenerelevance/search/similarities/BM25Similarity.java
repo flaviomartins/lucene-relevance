@@ -420,4 +420,3 @@ public class BM25Similarity extends Similarity {
     return d;
   }
 }
-
