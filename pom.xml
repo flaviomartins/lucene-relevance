@@ -3,7 +3,7 @@
   <groupId>pt.unl.fct.di</groupId>
   <artifactId>lucene-relevance</artifactId>
   <packaging>jar</packaging>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.2</version>
   <name>lucene-relevance</name>
       <dependencies>
         <dependency>
@@ -16,16 +16,12 @@
         <dependency>
            <groupId>org.apache.lucene</groupId>
            <artifactId>lucene-core</artifactId>
-           <version>4.0-SNAPSHOT</version>
-           <type>jar</type>
-           <scope>compile</scope>
+           <version>4.2.1</version>
         </dependency>
         <dependency>
            <groupId>org.apache.solr</groupId>
            <artifactId>solr-core</artifactId>
-           <version>4.0-SNAPSHOT</version>
-           <type>jar</type>
-           <scope>compile</scope>
+           <version>4.2.1</version>
         </dependency>
       </dependencies>
       <repositories>

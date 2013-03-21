@@ -20,9 +20,8 @@ package pt.unl.fct.di.lucenerelevance.search.similarities;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
@@ -33,7 +32,7 @@ import org.apache.lucene.util.SmallFloat;
 /**
  * BM25 Similarity. Introduced in Stephen E. Robertson, Steve Walker,
  * Susan Jones, Micheline Hancock-Beaulieu, and Mike Gatford. Okapi at TREC-3.
- * In Proceedings of the Third Text REtrieval Conference (TREC 1994).
+ * In Proceedings of the Third <b>T</b>ext <b>RE</b>trieval <b>C</b>onference (TREC 1994).
  * Gaithersburg, USA, November 1994.
  * 
  * BM25L and BM25+ improved versions of BM25. Introduced in
@@ -58,7 +57,12 @@ public class BM25Similarity extends Similarity {
     this.d  = d;
     this.model = model;
   }
-  
+
+  /**
+   * BM25 with the supplied parameter values.
+   * @param k1 Controls non-linear term frequency normalization (saturation).
+   * @param b Controls to what degree document length normalizes tf values.
+   */
   public BM25Similarity(float k1, float b) {
     this.k1 = k1;
     this.b  = b;
@@ -140,17 +144,23 @@ public class BM25Similarity extends Similarity {
     return NORM_TABLE[b & 0xFF];
   }
   
-  // Default true
+  /** 
+   * True if overlap tokens (tokens with a position of increment of zero) are
+   * discounted from the document's length.
+   */
   protected boolean discountOverlaps = true;
 
-  /** Determines whether overlap tokens (Tokens with 0 position increment) are 
+  /** Sets whether overlap tokens (Tokens with 0 position increment) are 
    *  ignored when computing norm.  By default this is true, meaning overlap
    *  tokens do not count when computing norms. */
   public void setDiscountOverlaps(boolean v) {
     discountOverlaps = v;
   }
 
-  /** @see #setDiscountOverlaps */
+  /**
+   * Returns true if overlap tokens are discounted from the document's length. 
+   * @see #setDiscountOverlaps 
+   */
   public boolean getDiscountOverlaps() {
     return discountOverlaps;
   }
@@ -167,11 +177,33 @@ public class BM25Similarity extends Similarity {
 
 
   @Override
-  public final void computeNorm(FieldInvertState state, Norm norm) {
+  public final long computeNorm(FieldInvertState state) {
     final int numTerms = discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength();
-    norm.setByte(encodeNormValue(state.getBoost(), numTerms));
+    return encodeNormValue(state.getBoost(), numTerms);
   }
 
+  /**
+   * Computes a score factor for a simple term and returns an explanation
+   * for that score factor.
+   * 
+   * <p>
+   * The default implementation uses:
+   * 
+   * <pre class="prettyprint">
+   * idf(docFreq, searcher.maxDoc());
+   * </pre>
+   * 
+   * Note that {@link CollectionStatistics#maxDoc()} is used instead of
+   * {@link org.apache.lucene.index.IndexReader#numDocs() IndexReader#numDocs()} because also 
+   * {@link TermStatistics#docFreq()} is used, and when the latter 
+   * is inaccurate, so is {@link CollectionStatistics#maxDoc()}, and in the same direction.
+   * In addition, {@link CollectionStatistics#maxDoc()} is more efficient to compute
+   *   
+   * @param collectionStats collection-level statistics
+   * @param termStats term-level statistics for the term
+   * @return an Explain object that includes both an idf score factor 
+             and an explanation for the term.
+   */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
     final long df = termStats.docFreq();
     final long max = collectionStats.maxDoc();
@@ -179,6 +211,19 @@ public class BM25Similarity extends Similarity {
     return new Explanation(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
   }
 
+  /**
+   * Computes a score factor for a phrase.
+   * 
+   * <p>
+   * The default implementation sums the idf factor for
+   * each term in the phrase.
+   * 
+   * @param collectionStats collection-level statistics
+   * @param termStats term-level statistics for the terms in the phrase
+   * @return an Explain object that includes both an idf 
+   *         score factor for the phrase and an explanation 
+   *         for each term.
+   */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
     final long max = collectionStats.maxDoc();
     float idf = 0.0f;
@@ -218,7 +263,7 @@ public class BM25Similarity extends Similarity {
   @Override
   public final ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     BM25Stats bm25stats = (BM25Stats) stats;
-    final DocValues norms = context.reader().normValues(bm25stats.field);
+    final NumericDocValues norms = context.reader().getNormValues(bm25stats.field);
     return norms == null 
       ? new ExactBM25DocScorerNoNorms(bm25stats)
       : new ExactBM25DocScorer(bm25stats, norms);
@@ -227,26 +272,26 @@ public class BM25Similarity extends Similarity {
   @Override
   public final SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     BM25Stats bm25stats = (BM25Stats) stats;
-    return new SloppyBM25DocScorer(bm25stats, context.reader().normValues(bm25stats.field));
+    return new SloppyBM25DocScorer(bm25stats, context.reader().getNormValues(bm25stats.field));
   }
   
   private class ExactBM25DocScorer extends ExactSimScorer {
     private final BM25Stats stats;
     private final float weightValue;
-    private final byte[] norms;
+    private final NumericDocValues norms;
     private final float[] cache;
     
-    ExactBM25DocScorer(BM25Stats stats, DocValues norms) throws IOException {
+    ExactBM25DocScorer(BM25Stats stats, NumericDocValues norms) throws IOException {
       assert norms != null;
       this.stats = stats;
       this.weightValue = stats.weight * (k1 + 1); // boost * idf * (k1 + 1)
       this.cache = stats.cache;
-      this.norms = (byte[])norms.getSource().getArray();
+      this.norms = norms;
     }
     
     @Override
     public float score(int doc, int freq) {
-      return weightValue * freq / (freq + cache[norms[doc] & 0xFF]);
+      return weightValue * freq / (freq + cache[(byte)norms.get(doc) & 0xFF]);
     }
     
     @Override
@@ -286,20 +331,20 @@ public class BM25Similarity extends Similarity {
   private class SloppyBM25DocScorer extends SloppySimScorer {
     private final BM25Stats stats;
     private final float weightValue; // boost * idf * (k1 + 1)
-    private final byte[] norms;
+    private final NumericDocValues norms;
     private final float[] cache;
     
-    SloppyBM25DocScorer(BM25Stats stats, DocValues norms) throws IOException {
+    SloppyBM25DocScorer(BM25Stats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.weight * (k1 + 1);
       this.cache = stats.cache;
-      this.norms = norms == null ? null : (byte[])norms.getSource().getArray();
+      this.norms = norms;
     }
     
     @Override
     public float score(int doc, float freq) {
       // if there are no norms, we act as if b=0
-      float norm = norms == null ? k1 : cache[norms[doc] & 0xFF];
+      float norm = norms == null ? k1 : cache[(byte)norms.get(doc) & 0xFF];
       return weightValue * freq / (freq + norm);
     }
     
@@ -359,7 +404,7 @@ public class BM25Similarity extends Similarity {
     } 
   }
   
-  private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, byte[] norms) {
+  private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) {
     Explanation result = new Explanation();
     result.setDescription("score(doc="+doc+",freq="+freq+"), product of:");
     
@@ -380,7 +425,7 @@ public class BM25Similarity extends Similarity {
       tfNormExpl.addDetail(new Explanation(0, "parameter b (norms omitted for field)"));
       tfNormExpl.setValue((freq.getValue() * (k1 + 1)) / (freq.getValue() + k1));
     } else {
-      float doclen = decodeNormValue(norms[doc]);
+      float doclen = decodeNormValue((byte)norms.get(doc));
       tfNormExpl.addDetail(new Explanation(b, "parameter b"));
       tfNormExpl.addDetail(new Explanation(stats.avgdl, "avgFieldLength"));
       tfNormExpl.addDetail(new Explanation(doclen, "fieldLength"));
@@ -408,14 +453,26 @@ public class BM25Similarity extends Similarity {
     }
   }
   
+  /** 
+   * Returns the <code>k1</code> parameter
+   * @see #BM25Similarity(float, float) 
+   */
   public float getK1() {
     return k1;
   }
   
+  /**
+   * Returns the <code>b</code> parameter 
+   * @see #BM25Similarity(float, float) 
+   */
   public float getB() {
     return b;
   }
   
+  /**
+   * Returns the <code>d</code> parameter 
+   * @see #BM25Similarity(float, float, float, BM25Model) 
+   */
   public float getD() {
     return d;
   }
