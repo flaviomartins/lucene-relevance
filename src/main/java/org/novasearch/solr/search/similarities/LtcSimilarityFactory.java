@@ -1,4 +1,4 @@
-package org.novasearch.lucene.search.similarities;
+package org.novasearch.solr.search.similarities;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,6 +21,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity; // javadoc
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
+import org.novasearch.lucene.search.similarities.LtcSimilarity;
 
 /**
  * Factory for {@link LtcSimilarity}
