@@ -26,8 +26,8 @@ import org.novasearch.lucene.search.similarities.LtcSimilarity;
 /**
  * Factory for {@link LtcSimilarity}
  * <p>
- * LtcSimilarity is based on Lucene's default scoring implementation,
- * but uses logarithmic tf weighting.
+ * LtcSimilarity is based on Lucene's default scoring implementation, based
+ * upon the Vector Space Model and uses logarithmic tf weighting.
  * <p>
  * Optional settings:
  * <ul>
@@ -38,12 +38,22 @@ import org.novasearch.lucene.search.similarities.LtcSimilarity;
  * @lucene.experimental
  */
 public class LtcSimilarityFactory extends SimilarityFactory {
-  private boolean discountOverlaps;
+
+  /** Init param name for specifying the value to use in
+   * {@link LtcSimilarity#setDiscountOverlaps(boolean)}
+   */
+  public static final String DISCOUNT_OVERLAPS = "discountOverlaps";
+
+  /**
+   * Controls the value of {@link LtcSimilarity#setDiscountOverlaps(boolean)}
+   * on newly constructed instances of {@link LtcSimilarity}
+   */
+  protected boolean discountOverlaps = true;
 
   @Override
   public void init(SolrParams params) {
     super.init(params);
-    discountOverlaps = params.getBool("discountOverlaps", true);
+    discountOverlaps = params.getBool(DISCOUNT_OVERLAPS, true);
   }
 
   @Override
