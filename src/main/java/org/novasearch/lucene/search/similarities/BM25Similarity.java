@@ -1,4 +1,4 @@
-package pt.unl.fct.di.lucenerelevance.search.similarities;
+package org.novasearch.lucene.search.similarities;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

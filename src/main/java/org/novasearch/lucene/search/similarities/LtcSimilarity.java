@@ -1,4 +1,4 @@
-package pt.unl.fct.di.lucenerelevance.search.similarities;
+package org.novasearch.lucene.search.similarities;
 
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 

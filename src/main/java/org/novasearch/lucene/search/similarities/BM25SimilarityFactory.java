@@ -1,4 +1,4 @@
-package pt.unl.fct.di.lucenerelevance.search.similarities;
+package org.novasearch.lucene.search.similarities;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,8 +21,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
 
-import pt.unl.fct.di.lucenerelevance.search.similarities.BM25Similarity;
-import pt.unl.fct.di.lucenerelevance.search.similarities.BM25Similarity.BM25Model;
+import org.novasearch.lucene.search.similarities.BM25Similarity.BM25Model;
 
 
 /**
