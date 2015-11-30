@@ -34,18 +34,19 @@ import org.apache.lucene.util.SmallFloat;
  * Susan Jones, Micheline Hancock-Beaulieu, and Mike Gatford. Okapi at TREC-3.
  * In Proceedings of the Third <b>T</b>ext <b>RE</b>trieval <b>C</b>onference (TREC 1994).
  * Gaithersburg, USA, November 1994.
- * 
+ * <p/>
  * BM25L and BM25+ improved versions of BM25. Introduced in
  * Yuanhua Lv, ChengXiang Zhai. "Lower-Bounding Term Frequency Normalization".
  * In Proceedings of the 20th ACM International Conference on Information and
  * Knowledge Management  (CIKM'11).
+ *
  * @lucene.experimental
  */
 public class BM25Similarity extends Similarity {
-  public static enum BM25Model {
+  public enum BM25Model {
     CLASSIC, L, PLUS
   }
-  
+
   private final float k1;
   private final float b;
   private final float d;
