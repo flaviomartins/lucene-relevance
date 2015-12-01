@@ -129,20 +129,6 @@ public class BM25SimilarityDocLen extends Similarity {
       return (float) (sumTotalTermFreq / (double) collectionStats.maxDoc());
     }
   }
-
-  /** The default implementation encodes <code>boost / length</code>
-   * with {@link Float#floatToIntBits(float)}.  This is incompatible with
-   * Lucene's default implementation.  If you use this, then you should
-   * reindex since {@link #decodeNormValue(int)} must match. */
-  protected int encodeNormValue(float boost, int fieldLength) {
-    return Float.floatToIntBits(boost / (float) fieldLength);
-  }
-
-  /** The default implementation returns <code>1 / f</code>
-   * where <code>f</code> is {@link Float#floatToIntBits(float)}. */
-  protected float decodeNormValue(int i) {
-    return 1 / Float.intBitsToFloat(i);
-  }
   
   /** 
    * True if overlap tokens (tokens with a position of increment of zero) are
@@ -168,7 +154,7 @@ public class BM25SimilarityDocLen extends Similarity {
   @Override
   public final long computeNorm(FieldInvertState state) {
     final int numTerms = discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength();
-    return encodeNormValue(state.getBoost(), numTerms);
+    return (int)(state.getBoost() * numTerms);
   }
 
   /**
@@ -259,7 +245,7 @@ public class BM25SimilarityDocLen extends Similarity {
         // if there are no norms, we act as if b=0
         norm = k1;
       } else {
-        float doclen = decodeNormValue((int)norms.get(doc));
+        float doclen = (float)norms.get(doc);
         norm = (1 - b) + b * doclen / stats.avgdl;
         if (model == BM25Model.L) {
           norm += d;
@@ -346,7 +332,7 @@ public class BM25SimilarityDocLen extends Similarity {
       tfNormExpl.addDetail(new Explanation(0, "parameter b (norms omitted for field)"));
       tfNormExpl.setValue((freq.getValue() * (k1 + 1)) / (freq.getValue() + k1));
     } else {
-      float doclen = decodeNormValue((int)norms.get(doc));
+      float doclen = (float)norms.get(doc);
       tfNormExpl.addDetail(new Explanation(b, "parameter b"));
       tfNormExpl.addDetail(new Explanation(stats.avgdl, "avgFieldLength"));
       tfNormExpl.addDetail(new Explanation(doclen, "fieldLength"));
