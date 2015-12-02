@@ -7,7 +7,7 @@
 
     <groupId>org.novasearch</groupId>
     <artifactId>lucene-relevance</artifactId>
-    <version>0.0.4-SNAPSHOT</version>
+    <version>0.0.4</version>
     <packaging>jar</packaging>
     <name>Lucene Relevance</name>
     <url>https://github.com/flaviomartins/lucene-relevance</url>
