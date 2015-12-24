@@ -122,8 +122,8 @@ public class BM25Similarity extends Similarity {
   }
   
   /** The default implementation computes the average as <code>sumTotalTermFreq / maxDoc</code>,
-   * or returns <code>1</code> if the index does not store sumTotalTermFreq (Lucene 3.x indexes
-   * or any field that omits frequency information). */
+   * or returns <code>1</code> if the index does not store sumTotalTermFreq:
+   * any field that omits frequency information). */
   protected float avgFieldLength(CollectionStatistics collectionStats) {
     final long sumTotalTermFreq = collectionStats.sumTotalTermFreq();
     if (sumTotalTermFreq <= 0) {
@@ -188,24 +188,24 @@ public class BM25Similarity extends Similarity {
   /**
    * Computes a score factor for a simple term and returns an explanation
    * for that score factor.
-   *
+   * 
    * <p>
    * The default implementation uses:
-   *
+   * 
    * <pre class="prettyprint">
    * idf(docFreq, searcher.maxDoc());
    * </pre>
-   *
+   * 
    * Note that {@link CollectionStatistics#maxDoc()} is used instead of
-   * {@link org.apache.lucene.index.IndexReader#numDocs() IndexReader#numDocs()} because also
-   * {@link TermStatistics#docFreq()} is used, and when the latter
+   * {@link org.apache.lucene.index.IndexReader#numDocs() IndexReader#numDocs()} because also 
+   * {@link TermStatistics#docFreq()} is used, and when the latter 
    * is inaccurate, so is {@link CollectionStatistics#maxDoc()}, and in the same direction.
    * In addition, {@link CollectionStatistics#maxDoc()} is more efficient to compute
-   *
+   *   
    * @param collectionStats collection-level statistics
    * @param termStats term-level statistics for the term
-   * @return an Explain object that includes both an idf score factor
-  and an explanation for the term.
+   * @return an Explain object that includes both an idf score factor 
+             and an explanation for the term.
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
     final long df = termStats.docFreq();
@@ -216,15 +216,15 @@ public class BM25Similarity extends Similarity {
 
   /**
    * Computes a score factor for a phrase.
-   *
+   * 
    * <p>
    * The default implementation sums the idf factor for
    * each term in the phrase.
-   *
+   * 
    * @param collectionStats collection-level statistics
    * @param termStats term-level statistics for the terms in the phrase
-   * @return an Explain object that includes both an idf
-   *         score factor for the phrase and an explanation
+   * @return an Explain object that includes both an idf 
+   *         score factor for the phrase and an explanation 
    *         for each term.
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
@@ -241,7 +241,7 @@ public class BM25Similarity extends Similarity {
   }
 
   @Override
-  public final SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+  public final SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
     Explanation idf = termStats.length == 1 ? idfExplain(collectionStats, termStats[0]) : idfExplain(collectionStats, termStats);
 
     float avgdl = avgFieldLength(collectionStats);
@@ -258,7 +258,7 @@ public class BM25Similarity extends Similarity {
         cache[i] += d;
       }
     }
-    return new BM25Stats(collectionStats.field(), idf, queryBoost, avgdl, cache);
+    return new BM25Stats(collectionStats.field(), idf, avgdl, cache);
   }
 
   @Override
@@ -309,10 +309,8 @@ public class BM25Similarity extends Similarity {
     private final Explanation idf;
     /** The average document length. */
     private final float avgdl;
-    /** query's inner boost */
-    private final float queryBoost;
-    /** query's outer boost (only for explain) */
-    private float topLevelBoost;
+    /** query boost */
+    private float boost;
     /** weight (idf * boost) */
     private float weight;
     /** field name, for pulling norms */
@@ -320,26 +318,25 @@ public class BM25Similarity extends Similarity {
     /** precomputed norm[256] with k1 * ((1 - b) + b * dl / avgdl) */
     private final float cache[];
 
-    BM25Stats(String field, Explanation idf, float queryBoost, float avgdl, float cache[]) {
+    BM25Stats(String field, Explanation idf, float avgdl, float cache[]) {
       this.field = field;
       this.idf = idf;
-      this.queryBoost = queryBoost;
       this.avgdl = avgdl;
       this.cache = cache;
+      normalize(1f, 1f);
     }
 
     @Override
     public float getValueForNormalization() {
       // we return a TF-IDF like normalization to be nice, but we don't actually normalize ourselves.
-      final float queryWeight = idf.getValue() * queryBoost;
-      return queryWeight * queryWeight;
+      return weight * weight;
     }
 
     @Override
-    public void normalize(float queryNorm, float topLevelBoost) {
+    public void normalize(float queryNorm, float boost) {
       // we don't normalize with queryNorm at all, we just capture the top-level boost
-      this.topLevelBoost = topLevelBoost;
-      this.weight = idf.getValue() * queryBoost * topLevelBoost;
+      this.boost = boost;
+      this.weight = idf.getValue() * boost;
     } 
   }
 
@@ -364,7 +361,7 @@ public class BM25Similarity extends Similarity {
   }
 
   private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) {
-    Explanation boostExpl = Explanation.match(stats.queryBoost * stats.topLevelBoost, "boost");
+    Explanation boostExpl = Explanation.match(stats.boost, "boost");
     List<Explanation> subs = new ArrayList<>();
     if (boostExpl.getValue() != 1.0f)
       subs.add(boostExpl);
