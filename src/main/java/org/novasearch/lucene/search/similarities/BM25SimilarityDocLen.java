@@ -157,7 +157,7 @@ public class BM25SimilarityDocLen extends Similarity {
   @Override
   public final long computeNorm(FieldInvertState state) {
     final int numTerms = discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength();
-    return (int)(state.getBoost() * numTerms);
+    return (long) (state.getBoost() * numTerms);
   }
 
   /**
