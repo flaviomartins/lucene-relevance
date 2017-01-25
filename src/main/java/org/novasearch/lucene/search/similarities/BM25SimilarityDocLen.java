@@ -1,5 +1,3 @@
-package org.novasearch.lucene.search.similarities;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.novasearch.lucene.search.similarities;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.novasearch.lucene.search.similarities;
+
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,7 +29,6 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.SmallFloat;
 
 /**
  * BM25 Similarity. Introduced in Stephen E. Robertson, Steve Walker,
@@ -37,16 +36,14 @@ import org.apache.lucene.util.SmallFloat;
  * In Proceedings of the Third <b>T</b>ext <b>RE</b>trieval <b>C</b>onference (TREC 1994).
  * Gaithersburg, USA, November 1994.
  * <p/>
- * BM25L and BM25+ improved versions of BM25. Introduced in
- * Yuanhua Lv, ChengXiang Zhai. "Lower-Bounding Term Frequency Normalization".
- * In Proceedings of the 20th ACM International Conference on Information and
- * Knowledge Management  (CIKM'11).
- *
- * @lucene.experimental
+ * BM25L version. Introduced in
+ * Yuanhua Lv, ChengXiang Zhai. "When Documents Are Very Long, BM25 Fails!".
+ * In Proceedings of The 34th International ACM SIGIR conference on research
+ * and development in Information Retrieval (SIGIR'11).
  */
 public class BM25SimilarityDocLen extends Similarity {
   public enum BM25Model {
-    CLASSIC, L, PLUS
+    CLASSIC, L
   }
 
   private final float k1;
@@ -54,7 +51,25 @@ public class BM25SimilarityDocLen extends Similarity {
   private final float d;
   private final BM25Model model;
 
+  /**
+   * BM25 with the supplied parameter values.
+   * @param k1 Controls non-linear term frequency normalization (saturation).
+   * @param b Controls to what degree document length normalizes tf values.
+   * @param d Controls document length normalization of tf values in BM25L.
+   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is
+   *         not within the range {@code [0..1]}, or if {@code d} is
+   *         not within the range {@code [0..1]}
+   */
   public BM25SimilarityDocLen(float k1, float b, float d, BM25Model model) {
+    if (Float.isFinite(k1) == false || k1 < 0) {
+      throw new IllegalArgumentException("illegal k1 value: " + k1 + ", must be a non-negative finite value");
+    }
+    if (Float.isNaN(b) || b < 0 || b > 1) {
+      throw new IllegalArgumentException("illegal b value: " + b + ", must be between 0 and 1");
+    }
+    if (Float.isNaN(d) || d < 0 || d > 1) {
+      throw new IllegalArgumentException("illegal d value: " + d + ", must be between 0 and 1.5");
+    }
     this.k1 = k1;
     this.b  = b;
     this.d  = d;
@@ -65,8 +80,16 @@ public class BM25SimilarityDocLen extends Similarity {
    * BM25 with the supplied parameter values.
    * @param k1 Controls non-linear term frequency normalization (saturation).
    * @param b Controls to what degree document length normalizes tf values.
+   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is
+   *         not within the range {@code [0..1]}
    */
   public BM25SimilarityDocLen(float k1, float b) {
+    if (Float.isFinite(k1) == false || k1 < 0) {
+      throw new IllegalArgumentException("illegal k1 value: " + k1 + ", must be a non-negative finite value");
+    }
+    if (Float.isNaN(b) || b < 0 || b > 1) {
+      throw new IllegalArgumentException("illegal b value: " + b + ", must be between 0 and 1");
+    }
     this.k1 = k1;
     this.b  = b;
     this.d  = 0;
@@ -75,9 +98,9 @@ public class BM25SimilarityDocLen extends Similarity {
   
   /** BM25 with these default values:
    * <ul>
-   *   <li>{@code k1 = 1.2},
-   *   <li>{@code b = 0.75}.</li>
-   *   <li>{@code d = 0.5} for BM25L, {@code d = 1.0} for BM25PLUS.</li>
+   *   <li>{@code k1 = 1.2}</li>
+   *   <li>{@code b = 0.75}</li>
+   *   <li>{@code d = 0.5} for BM25L.</li>
    * </ul>
    */
   public BM25SimilarityDocLen(BM25Model model) {
@@ -85,18 +108,16 @@ public class BM25SimilarityDocLen extends Similarity {
     this.b  = 0.75f;
     if (model == BM25Model.L) {
       this.d = 0.5f;
-    } else if (model == BM25Model.PLUS) {
-      this.d = 1.0f;
     } else {
       this.d  = 0;
     }
     this.model = model;
   }
-  
+
   /** BM25 with these default values:
    * <ul>
-   *   <li>{@code k1 = 1.2},
-   *   <li>{@code b = 0.75}.</li>
+   *   <li>{@code k1 = 1.2}</li>
+   *   <li>{@code b = 0.75}</li>
    * </ul>
    */
   public BM25SimilarityDocLen() {
@@ -106,9 +127,9 @@ public class BM25SimilarityDocLen extends Similarity {
     this.model = BM25Model.CLASSIC;
   }
   
-  /** Implemented as <code>log(1 + (numDocs - docFreq + 0.5)/(docFreq + 0.5))</code>. */
-  protected float idf(long docFreq, long numDocs) {
-    return (float) Math.log(1 + (numDocs - docFreq + 0.5D)/(docFreq + 0.5D));
+  /** Implemented as <code>log(1 + (docCount - docFreq + 0.5)/(docFreq + 0.5))</code>. */
+  protected float idf(long docFreq, long docCount) {
+    return (float) Math.log(1 + (docCount - docFreq + 0.5D)/(docFreq + 0.5D));
   }
   
   /** Implemented as <code>1 / (distance + 1)</code>. */
@@ -121,7 +142,7 @@ public class BM25SimilarityDocLen extends Similarity {
     return 1;
   }
   
-  /** The default implementation computes the average as <code>sumTotalTermFreq / maxDoc</code>,
+  /** The default implementation computes the average as <code>sumTotalTermFreq / docCount</code>,
    * or returns <code>1</code> if the index does not store sumTotalTermFreq:
    * any field that omits frequency information). */
   protected float avgFieldLength(CollectionStatistics collectionStats) {
@@ -129,7 +150,8 @@ public class BM25SimilarityDocLen extends Similarity {
     if (sumTotalTermFreq <= 0) {
       return 1f;       // field does not exist, or stat is unsupported
     } else {
-      return (float) (sumTotalTermFreq / (double) collectionStats.maxDoc());
+      final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
+      return (float) (sumTotalTermFreq / (double) docCount);
     }
   }
   
@@ -157,7 +179,9 @@ public class BM25SimilarityDocLen extends Similarity {
   @Override
   public final long computeNorm(FieldInvertState state) {
     final int numTerms = discountOverlaps ? state.getLength() - state.getNumOverlap() : state.getLength();
-    return (long) (state.getBoost() * numTerms);
+    // Dividing by the square of the boost is to mimic behavior of the old BM25 formula
+    final float boost = state.getBoost();
+    return (long) ( numTerms / (boost*boost) );
   }
 
   /**
@@ -168,14 +192,14 @@ public class BM25SimilarityDocLen extends Similarity {
    * The default implementation uses:
    * 
    * <pre class="prettyprint">
-   * idf(docFreq, searcher.maxDoc());
+   * idf(docFreq, docCount);
    * </pre>
    * 
-   * Note that {@link CollectionStatistics#maxDoc()} is used instead of
+   * Note that {@link CollectionStatistics#docCount()} is used instead of
    * {@link org.apache.lucene.index.IndexReader#numDocs() IndexReader#numDocs()} because also 
    * {@link TermStatistics#docFreq()} is used, and when the latter 
-   * is inaccurate, so is {@link CollectionStatistics#maxDoc()}, and in the same direction.
-   * In addition, {@link CollectionStatistics#maxDoc()} is more efficient to compute
+   * is inaccurate, so is {@link CollectionStatistics#docCount()}, and in the same direction.
+   * In addition, {@link CollectionStatistics#docCount()} does not skew when fields are sparse.
    *   
    * @param collectionStats collection-level statistics
    * @param termStats term-level statistics for the term
@@ -184,9 +208,9 @@ public class BM25SimilarityDocLen extends Similarity {
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
     final long df = termStats.docFreq();
-    final long max = collectionStats.maxDoc();
-    final float idf = idf(df, max);
-    return Explanation.match(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
+    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
+    final float idf = idf(df, docCount);
+    return Explanation.match(idf, "idf(docFreq=" + df + ", docCount=" + docCount + ")");
   }
 
   /**
@@ -203,13 +227,13 @@ public class BM25SimilarityDocLen extends Similarity {
    *         for each term.
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
-    final long max = collectionStats.maxDoc();
+    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
     float idf = 0.0f;
     List<Explanation> details = new ArrayList<>();
     for (final TermStatistics stat : termStats ) {
       final long df = stat.docFreq();
-      final float termIdf = idf(df, max);
-      details.add(Explanation.match(termIdf, "idf(docFreq=" + df + ", maxDocs=" + max + ")"));
+      final float termIdf = idf(df, docCount);
+      details.add(Explanation.match(termIdf, "idf(docFreq=" + df + ", docCount=" + docCount + ")"));
       idf += termIdf;
     }
     return Explanation.match(idf, "idf(), sum of:", details);
@@ -233,31 +257,35 @@ public class BM25SimilarityDocLen extends Similarity {
     private final BM25Stats stats;
     private final float weightValue; // boost * idf * (k1 + 1)
     private final NumericDocValues norms;
+    /** precomputed k1 * ((1 - b) */
+    private final float multK1minusB;
+    /** precomputed k1 * b/avgdl. */
+    private final float multK1_b_InvAvgdl;
+    /** precomputed d / k1. */
+    private final float multInvK1_d;
 
     BM25DocScorer(BM25Stats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.weight * (k1 + 1);
       this.norms = norms;
+      this.multK1minusB = k1 * (1 - b);
+      this.multK1_b_InvAvgdl = k1 * b / stats.avgdl;
+      this.multInvK1_d = d / k1;
     }
     
     @Override
     public float score(int doc, float freq) {
       float norm;
+      float multInvK1_d_norm = 0;
       if (norms == null) {
         // if there are no norms, we act as if b=0
         norm = k1;
       } else {
-        float doclen = (float)norms.get(doc);
-        norm = (1 - b) + b * doclen / stats.avgdl;
-        if (model == BM25Model.L) {
-          norm += d;
-        }
-        norm *= k1;
-        if (model == BM25Model.PLUS) {
-          norm += d;
-        }
+        float doclen = norms.get(doc);
+        norm = multK1minusB + multK1_b_InvAvgdl * doclen;
+        multInvK1_d_norm = multInvK1_d * norm;
       }
-      return weightValue * freq / (freq + norm);
+      return weightValue * (freq + multInvK1_d_norm) / (freq + norm + multInvK1_d_norm);
     }
     
     @Override
@@ -324,9 +352,16 @@ public class BM25SimilarityDocLen extends Similarity {
       subs.add(Explanation.match(b, "parameter b"));
       subs.add(Explanation.match(stats.avgdl, "avgFieldLength"));
       subs.add(Explanation.match(doclen, "fieldLength"));
-      return Explanation.match(
-          (freq.getValue() * (k1 + 1)) / (freq.getValue() + k1 * (1 - b + b * doclen/stats.avgdl)),
-          "tfNorm, computed from:", subs);
+      if (model == BM25Model.L) {
+        subs.add(Explanation.match(d, "parameter d"));
+        float value = d + freq.getValue() / (1 - b + b * doclen/stats.avgdl);
+        return Explanation.match(((k1 + 1) * value) / (k1 + value),
+            "tfNorm, computed from:", subs);
+      } else {
+        return Explanation.match(
+            (freq.getValue() * (k1 + 1)) / (freq.getValue() + k1 * (1 - b + b * doclen/stats.avgdl)),
+            "tfNorm, computed from:", subs);
+      }
     }
   }
 
@@ -356,7 +391,7 @@ public class BM25SimilarityDocLen extends Similarity {
    * Returns the <code>k1</code> parameter
    * @see #BM25SimilarityDocLen(float, float)
    */
-  public float getK1() {
+  public final float getK1() {
     return k1;
   }
   
@@ -364,7 +399,7 @@ public class BM25SimilarityDocLen extends Similarity {
    * Returns the <code>b</code> parameter 
    * @see #BM25SimilarityDocLen(float, float)
    */
-  public float getB() {
+  public final float getB() {
     return b;
   }
   
@@ -372,7 +407,7 @@ public class BM25SimilarityDocLen extends Similarity {
    * Returns the <code>d</code> parameter 
    * @see #BM25SimilarityDocLen(float, float, float, BM25Model)
    */
-  public float getD() {
+  public final float getD() {
     return d;
   }
 }

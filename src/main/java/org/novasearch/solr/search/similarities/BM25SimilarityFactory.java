@@ -1,5 +1,3 @@
-package org.novasearch.solr.search.similarities;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.novasearch.solr.search.similarities;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.novasearch.solr.search.similarities;
 
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
@@ -23,7 +22,6 @@ import org.apache.solr.schema.SimilarityFactory;
 
 import org.novasearch.lucene.search.similarities.BM25Similarity;
 import org.novasearch.lucene.search.similarities.BM25Similarity.BM25Model;
-
 
 /**
  * Factory for {@link BM25Similarity}
@@ -34,13 +32,12 @@ import org.novasearch.lucene.search.similarities.BM25Similarity.BM25Model;
  *                   The default is <code>1.2</code>
  *   <li>b (float): Controls to what degree document length normalizes tf values.
  *                  The default is <code>0.75</code>
- *   <li>d (float): Controls lower-bounding normalization in BM25L/PLUS.
- *                  The default is <code>0.5</code> for BM25L, <code>1.0</code> for BM25PLUS
+ *   <li>d (float): Controls document length normalization of tf values in BM25L.
+ *                  The default is <code>0.5</code> for BM25L
  *   <li>model (string): BM25 model.
   *        <ul>
  *           <li>CLASSIC: Classic BM25 model
  *           <li>BM25L: Does not overly-penalize very long documents.
- *           <li>BM25PLUS: Another model that does not overly-penalize very long documents.
  *         </ul>
  * </ul>
  * <p>
@@ -49,7 +46,6 @@ import org.novasearch.lucene.search.similarities.BM25Similarity.BM25Model;
  *   <li>discountOverlaps (bool): Sets
  *       {@link BM25Similarity#setDiscountOverlaps(boolean)}</li>
  * </ul>
- * @lucene.experimental
  */
 public class BM25SimilarityFactory extends SimilarityFactory {
   private boolean discountOverlaps;
@@ -74,7 +70,7 @@ public class BM25SimilarityFactory extends SimilarityFactory {
     BM25Similarity sim;
     if (model != null) {
       if (d == 0) {
-    	  d = (model == BM25Model.L) ? 0.5f : 1.0f;
+    	  d = 0.5f;
       }
       sim = new BM25Similarity(k1, b, d, model);
     } else {
@@ -84,4 +80,3 @@ public class BM25SimilarityFactory extends SimilarityFactory {
     return sim;
   }
 }
-
