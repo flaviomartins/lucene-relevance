@@ -1,5 +1,3 @@
-package org.novasearch.lucene.search.similarities;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.novasearch.lucene.search.similarities;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.novasearch.lucene.search.similarities;
+
 
 import java.io.IOException;
 
@@ -35,16 +35,14 @@ import org.apache.lucene.util.SmallFloat;
  * In Proceedings of the Third <b>T</b>ext <b>RE</b>trieval <b>C</b>onference (TREC 1994).
  * Gaithersburg, USA, November 1994.
  * <p/>
- * BM25L and BM25+ improved versions of BM25. Introduced in
- * Yuanhua Lv, ChengXiang Zhai. "Lower-Bounding Term Frequency Normalization".
- * In Proceedings of the 20th ACM International Conference on Information and
- * Knowledge Management  (CIKM'11).
- *
- * @lucene.experimental
+ * BM25L version. Introduced in
+ * Yuanhua Lv, ChengXiang Zhai. "When Documents Are Very Long, BM25 Fails!".
+ * In Proceedings of The 34th International ACM SIGIR conference on research
+ * and development in Information Retrieval (SIGIR'11).
  */
 public class BM25Similarity extends Similarity {
   public enum BM25Model {
-    CLASSIC, L, PLUS
+    CLASSIC, L
   }
 
   private final float k1;
@@ -52,7 +50,25 @@ public class BM25Similarity extends Similarity {
   private final float d;
   private final BM25Model model;
 
+  /**
+   * BM25 with the supplied parameter values.
+   * @param k1 Controls non-linear term frequency normalization (saturation).
+   * @param b Controls to what degree document length normalizes tf values.
+   * @param d Controls document length normalization of tf values in BM25L.
+   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is
+   *         not within the range {@code [0..1]}, or if {@code d} is
+   *         not within the range {@code [0..1]}
+   */
   public BM25Similarity(float k1, float b, float d, BM25Model model) {
+    if (Float.isInfinite(k1) || k1 < 0) {
+      throw new IllegalArgumentException("illegal k1 value: " + k1 + ", must be a non-negative finite value");
+    }
+    if (Float.isNaN(b) || b < 0 || b > 1) {
+      throw new IllegalArgumentException("illegal b value: " + b + ", must be between 0 and 1");
+    }
+    if (Float.isNaN(d) || d < 0 || d > 1) {
+      throw new IllegalArgumentException("illegal d value: " + d + ", must be between 0 and 1.5");
+    }
     this.k1 = k1;
     this.b  = b;
     this.d  = d;
@@ -63,8 +79,16 @@ public class BM25Similarity extends Similarity {
    * BM25 with the supplied parameter values.
    * @param k1 Controls non-linear term frequency normalization (saturation).
    * @param b Controls to what degree document length normalizes tf values.
+   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is
+   *         not within the range {@code [0..1]}
    */
   public BM25Similarity(float k1, float b) {
+    if (Float.isInfinite(k1) || k1 < 0) {
+      throw new IllegalArgumentException("illegal k1 value: " + k1 + ", must be a non-negative finite value");
+    }
+    if (Float.isNaN(b) || b < 0 || b > 1) {
+      throw new IllegalArgumentException("illegal b value: " + b + ", must be between 0 and 1");
+    }
     this.k1 = k1;
     this.b  = b;
     this.d  = 0;
@@ -73,9 +97,9 @@ public class BM25Similarity extends Similarity {
   
   /** BM25 with these default values:
    * <ul>
-   *   <li>{@code k1 = 1.2},
-   *   <li>{@code b = 0.75}.</li>
-   *   <li>{@code d = 0.5} for BM25L, {@code d = 1.0} for BM25PLUS.</li>
+   *   <li>{@code k1 = 1.2}</li>
+   *   <li>{@code b = 0.75}</li>
+   *   <li>{@code d = 0.5} for BM25L.</li>
    * </ul>
    */
   public BM25Similarity(BM25Model model) {
@@ -83,8 +107,6 @@ public class BM25Similarity extends Similarity {
     this.b  = 0.75f;
     if (model == BM25Model.L) {
       this.d = 0.5f;
-    } else if (model == BM25Model.PLUS) {
-      this.d = 1.0f;
     } else {
       this.d  = 0;
     }
@@ -93,8 +115,8 @@ public class BM25Similarity extends Similarity {
   
   /** BM25 with these default values:
    * <ul>
-   *   <li>{@code k1 = 1.2},
-   *   <li>{@code b = 0.75}.</li>
+   *   <li>{@code k1 = 1.2}</li>
+   *   <li>{@code b = 0.75}</li>
    * </ul>
    */
   public BM25Similarity() {
@@ -170,10 +192,11 @@ public class BM25Similarity extends Similarity {
   private static final float[] NORM_TABLE = new float[256];
 
   static {
-    for (int i = 0; i < 256; i++) {
+    for (int i = 1; i < 256; i++) {
       float f = SmallFloat.byte315ToFloat((byte)i);
       NORM_TABLE[i] = 1.0f / (f*f);
     }
+    NORM_TABLE[0] = 1.0f / NORM_TABLE[255]; // otherwise inf
   }
 
 
@@ -254,9 +277,6 @@ public class BM25Similarity extends Similarity {
         cache[i] += d;
       }
       cache[i] *= k1;
-      if (model == BM25Model.PLUS) {
-        cache[i] += d;
-      }
     }
     return new BM25Stats(collectionStats.field(), idf, queryBoost, avgdl, cache);
   }
@@ -342,41 +362,36 @@ public class BM25Similarity extends Similarity {
       this.weight = idf.getValue() * queryBoost * topLevelBoost;
     } 
   }
-  
+
   private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) {
     Explanation result = new Explanation();
     result.setDescription("score(doc="+doc+",freq="+freq+"), product of:");
-    
+
     Explanation boostExpl = new Explanation(stats.queryBoost * stats.topLevelBoost, "boost");
     if (boostExpl.getValue() != 1.0f)
       result.addDetail(boostExpl);
-    
+
     result.addDetail(stats.idf);
 
     Explanation tfNormExpl = new Explanation();
     tfNormExpl.setDescription("tfNorm, computed from:");
     tfNormExpl.addDetail(freq);
     tfNormExpl.addDetail(new Explanation(k1, "parameter k1"));
-    if (model != BM25Model.CLASSIC) {
-      tfNormExpl.addDetail(new Explanation(d, "parameter d"));
-    }
     if (norms == null) {
       tfNormExpl.addDetail(new Explanation(0, "parameter b (norms omitted for field)"));
       tfNormExpl.setValue((freq.getValue() * (k1 + 1)) / (freq.getValue() + k1));
     } else {
-      float doclen = decodeNormValue((byte)norms.get(doc));
+      float doclen = norms.get(doc);
       tfNormExpl.addDetail(new Explanation(b, "parameter b"));
       tfNormExpl.addDetail(new Explanation(stats.avgdl, "avgFieldLength"));
       tfNormExpl.addDetail(new Explanation(doclen, "fieldLength"));
-      float value = 1 - b + b * doclen/stats.avgdl;
       if (model == BM25Model.L) {
-        value += d;
+        tfNormExpl.addDetail(new Explanation(d, "parameter d"));
+        float value = d + freq.getValue() / (1 - b + b * doclen/stats.avgdl);
+        tfNormExpl.setValue(((k1 + 1) * value) / (k1 + value));
+      } else {
+        tfNormExpl.setValue((freq.getValue() * (k1 + 1)) / (freq.getValue() + k1 * (1 - b + b * doclen/stats.avgdl)));
       }
-      value *= k1;
-      if (model == BM25Model.PLUS) {
-        value += d;
-      }
-      tfNormExpl.setValue((freq.getValue() * (k1 + 1)) / (freq.getValue() + value));
     }
     result.addDetail(tfNormExpl);
     result.setValue(boostExpl.getValue() * stats.idf.getValue() * tfNormExpl.getValue());
@@ -396,7 +411,7 @@ public class BM25Similarity extends Similarity {
    * Returns the <code>k1</code> parameter
    * @see #BM25Similarity(float, float) 
    */
-  public float getK1() {
+  public final float getK1() {
     return k1;
   }
   
@@ -404,7 +419,7 @@ public class BM25Similarity extends Similarity {
    * Returns the <code>b</code> parameter 
    * @see #BM25Similarity(float, float) 
    */
-  public float getB() {
+  public final float getB() {
     return b;
   }
   
@@ -412,7 +427,7 @@ public class BM25Similarity extends Similarity {
    * Returns the <code>d</code> parameter 
    * @see #BM25Similarity(float, float, float, BM25Model) 
    */
-  public float getD() {
+  public final float getD() {
     return d;
   }
 }
