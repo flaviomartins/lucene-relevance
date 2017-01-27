@@ -1,4 +1,5 @@
 # Lucene-Relevance
-Lucene 4.x implementations of good retrieval functions.
-- LtcSimilarity: TF-IDF (ltc)
-- BM25Similarity: choice between default BM25 setting, BM25L and BM25+
+Contains implementations of good similarities for Lucene/Solr.
+- LtcSimilarity: tf-idf with sublinear tf (ltc).
+- BM25Similarity: optional BM25L model to improve long document scores.
+- BM25SimilarityDocLen: uses accurate document lengths to improve precision.
