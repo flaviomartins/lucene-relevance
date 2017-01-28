@@ -93,7 +93,7 @@ public class BM25SimilarityDocLen extends Similarity {
     this.d  = 0;
     this.model = BM25Model.CLASSIC;
   }
-  
+
   /** BM25 with these default values:
    * <ul>
    *   <li>{@code k1 = 1.2}</li>
@@ -111,7 +111,7 @@ public class BM25SimilarityDocLen extends Similarity {
     }
     this.model = model;
   }
-  
+
   /** BM25 with these default values:
    * <ul>
    *   <li>{@code k1 = 1.2}</li>
@@ -283,7 +283,7 @@ public class BM25SimilarityDocLen extends Similarity {
         float doclen = norms.get(doc);
         norm = multK1minusB + multK1_b_InvAvgdl * doclen;
         multInvK1_d_norm = multInvK1_d * norm;
-        }
+      }
       return weightValue * (freq + multInvK1_d_norm) / (freq + norm + multInvK1_d_norm);
     }
     
@@ -339,15 +339,15 @@ public class BM25SimilarityDocLen extends Similarity {
       this.weight = idf.getValue() * queryBoost * topLevelBoost;
     } 
   }
-  
+
   private Explanation explainScore(int doc, Explanation freq, BM25Stats stats, NumericDocValues norms) {
     Explanation result = new Explanation();
     result.setDescription("score(doc="+doc+",freq="+freq+"), product of:");
-    
+
     Explanation boostExpl = new Explanation(stats.queryBoost * stats.topLevelBoost, "boost");
     if (boostExpl.getValue() != 1.0f)
       result.addDetail(boostExpl);
-    
+
     result.addDetail(stats.idf);
 
     Explanation tfNormExpl = new Explanation();

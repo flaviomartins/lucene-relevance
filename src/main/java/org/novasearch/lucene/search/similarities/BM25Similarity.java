@@ -94,7 +94,7 @@ public class BM25Similarity extends Similarity {
     this.d  = 0;
     this.model = BM25Model.CLASSIC;
   }
-  
+
   /** BM25 with these default values:
    * <ul>
    *   <li>{@code k1 = 1.2}</li>
@@ -272,11 +272,7 @@ public class BM25Similarity extends Similarity {
     // compute freq-independent part of bm25 equation across all norm values
     float cache[] = new float[256];
     for (int i = 0; i < cache.length; i++) {
-      cache[i] = (1 - b) + b * decodeNormValue((byte)i) / avgdl;
-      if (model == BM25Model.L) {
-        cache[i] += d;
-      }
-      cache[i] *= k1;
+      cache[i] = k1 * ((1 - b) + b * decodeNormValue((byte)i) / avgdl);
     }
     return new BM25Stats(collectionStats.field(), idf, queryBoost, avgdl, cache);
   }
@@ -292,19 +288,23 @@ public class BM25Similarity extends Similarity {
     private final float weightValue; // boost * idf * (k1 + 1)
     private final NumericDocValues norms;
     private final float[] cache;
+    /** precomputed d / k1. */
+    private final float multInvK1_d;
     
     BM25DocScorer(BM25Stats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.weight * (k1 + 1);
       this.cache = stats.cache;
       this.norms = norms;
+      this.multInvK1_d = d / k1;
     }
     
     @Override
     public float score(int doc, float freq) {
       // if there are no norms, we act as if b=0
       float norm = norms == null ? k1 : cache[(byte)norms.get(doc) & 0xFF];
-      return weightValue * freq / (freq + norm);
+      float multInvK1_d_norm = multInvK1_d * norm;
+      return weightValue * (freq + multInvK1_d_norm) / (freq + norm + multInvK1_d_norm);
     }
     
     @Override

@@ -12,7 +12,7 @@
 
     <name>Lucene Relevance</name>
     <description>
-        Lucene 4.x implementations of good retrieval functions.
+        Contains implementations of good similarities for Lucene/Solr.
     </description>
     <url>https://github.com/flaviomartins/lucene-relevance</url>
 
