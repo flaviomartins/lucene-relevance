@@ -62,7 +62,7 @@ public class BM25Similarity extends Similarity {
    *         not within the range {@code [0..1]}
    */
   public BM25Similarity(float k1, float b, float d, BM25Model model) {
-    if (Float.isFinite(k1) == false || k1 < 0) {
+    if (Float.isInfinite(k1) || k1 < 0) {
       throw new IllegalArgumentException("illegal k1 value: " + k1 + ", must be a non-negative finite value");
     }
     if (Float.isNaN(b) || b < 0 || b > 1) {
@@ -85,7 +85,7 @@ public class BM25Similarity extends Similarity {
    *         not within the range {@code [0..1]}
    */
   public BM25Similarity(float k1, float b) {
-    if (Float.isFinite(k1) == false || k1 < 0) {
+    if (Float.isInfinite(k1) || k1 < 0) {
       throw new IllegalArgumentException("illegal k1 value: " + k1 + ", must be a non-negative finite value");
     }
     if (Float.isNaN(b) || b < 0 || b > 1) {
@@ -235,7 +235,9 @@ public class BM25Similarity extends Similarity {
     final long df = termStats.docFreq();
     final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
     final float idf = idf(df, docCount);
-    return Explanation.match(idf, "idf(docFreq=" + df + ", docCount=" + docCount + ")");
+    return Explanation.match(idf, "idf, computed as log(1 + (docCount - docFreq + 0.5) / (docFreq + 0.5)) from:",
+        Explanation.match(df, "docFreq"),
+        Explanation.match(docCount, "docCount"));
   }
 
   /**
@@ -252,16 +254,14 @@ public class BM25Similarity extends Similarity {
    *         for each term.
    */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
-    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
-    float idf = 0.0f;
+    double idf = 0d; // sum into a double before casting into a float
     List<Explanation> details = new ArrayList<>();
     for (final TermStatistics stat : termStats ) {
-      final long df = stat.docFreq();
-      final float termIdf = idf(df, docCount);
-      details.add(Explanation.match(termIdf, "idf(docFreq=" + df + ", docCount=" + docCount + ")"));
-      idf += termIdf;
+      Explanation idfExplain = idfExplain(collectionStats, stat);
+      details.add(idfExplain);
+      idf += idfExplain.getValue();
     }
-    return Explanation.match(idf, "idf(), sum of:", details);
+    return Explanation.match((float) idf, "idf(), sum of:", details);
   }
 
   @Override
@@ -369,7 +369,7 @@ public class BM25Similarity extends Similarity {
       subs.add(Explanation.match(0, "parameter b (norms omitted for field)"));
       return Explanation.match(
           (freq.getValue() * (k1 + 1)) / (freq.getValue() + k1),
-          "tfNorm, computed from:", subs);
+          "tfNorm, computed as (freq * (k1 + 1)) / (freq + k1) from:", subs);
     } else {
       float doclen = decodeNormValue((byte)norms.get(doc));
       subs.add(Explanation.match(b, "parameter b"));
@@ -377,13 +377,14 @@ public class BM25Similarity extends Similarity {
       subs.add(Explanation.match(doclen, "fieldLength"));
       if (model == BM25Model.L) {
         subs.add(Explanation.match(d, "parameter d"));
-        float value = d + freq.getValue() / (1 - b + b * doclen/stats.avgdl);
-        return Explanation.match(((k1 + 1) * value) / (k1 + value),
-            "tfNorm, computed from:", subs);
+        float tfNormValue = d + freq.getValue() / (1 - b + b * doclen/stats.avgdl);
+        subs.add(Explanation.match(tfNormValue, "tfNormValue, computed as d + freq / (1 - b + b * fieldLength / avgFieldLength)"));
+        return Explanation.match(((k1 + 1) * tfNormValue) / (k1 + tfNormValue),
+            "tfNorm, computed as ((k1 + 1) * tfNormValue) / (k1 + tfNormValue) from:", subs);
       } else {
         return Explanation.match(
             (freq.getValue() * (k1 + 1)) / (freq.getValue() + k1 * (1 - b + b * doclen/stats.avgdl)),
-            "tfNorm, computed from:", subs);
+            "tfNorm, computed as (freq * (k1 + 1)) / (freq + k1 * (1 - b + b * fieldLength / avgFieldLength)) from:", subs);
       }
     }
   }
