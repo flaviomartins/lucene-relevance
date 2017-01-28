@@ -1,13 +1,13 @@
 package org.novasearch.lucene.search.similarities;
 
-import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 
 /**
  * LtcSimilarity is based on Lucene's default scoring implementation,
  * but uses logarithmic tf weighting.
  * @lucene.experimental
  */
-public class LtcSimilarity extends ClassicSimilarity {
+public class LtcSimilarity extends DefaultSimilarity {
   
   @Override
   public float tf(float freq) {

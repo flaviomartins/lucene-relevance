@@ -7,7 +7,7 @@
 
     <groupId>org.novasearch</groupId>
     <artifactId>lucene-relevance</artifactId>
-    <version>6.0.0.0</version>
+    <version>5.3.2.0</version>
     <packaging>jar</packaging>
 
     <name>Lucene Relevance</name>
@@ -48,8 +48,8 @@
     </issueManagement>
 
     <properties>
-        <lucene.version>6.0.0</lucene.version>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <lucene.version>5.3.2</lucene.version>
+        <maven.compiler.target>1.7</maven.compiler.target>
     </properties>
 
     <dependencies>
