@@ -33,7 +33,8 @@ import org.novasearch.lucene.search.similarities.BM25Similarity.BM25Model;
  *   <li>b (float): Controls to what degree document length normalizes tf values.
  *                  The default is <code>0.75</code>
  *   <li>d (float): Controls document length normalization of tf values in BM25L.
- *                  The default is <code>0.5</code> for BM25L
+ *                  Controls lower-bound of term frequency normalization in BM25PLUS.
+ *                  The default is <code>0.5</code> for BM25L, <code>1.0</code> for BM25PLUS
  *   <li>model (string): BM25 model.
   *        <ul>
  *           <li>CLASSIC: Classic BM25 model
@@ -70,7 +71,7 @@ public class BM25SimilarityFactory extends SimilarityFactory {
     BM25Similarity sim;
     if (model != null) {
       if (d == 0) {
-    	  d = 0.5f;
+        d = (model == BM25Model.L) ? 0.5f : 1.0f;
       }
       sim = new BM25Similarity(k1, b, d, model);
     } else {
