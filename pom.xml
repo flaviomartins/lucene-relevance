@@ -7,7 +7,7 @@
 
     <groupId>org.novasearch</groupId>
     <artifactId>lucene-relevance</artifactId>
-    <version>5.4.1.0</version>
+    <version>5.4.1.1</version>
     <packaging>jar</packaging>
 
     <name>Lucene Relevance</name>
