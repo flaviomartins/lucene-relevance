@@ -41,10 +41,15 @@ import org.apache.lucene.util.SmallFloat;
  * Yuanhua Lv, ChengXiang Zhai. "When Documents Are Very Long, BM25 Fails!".
  * In Proceedings of The 34th International ACM SIGIR conference on research
  * and development in Information Retrieval (SIGIR'11).
+ * <p/>
+ * BM25+ version. Introduced in
+ * Yuanhua Lv, ChengXiang Zhai. "Lower-Bounding Term Frequency Normalization".
+ * In Proceedings of the 20th ACM International Conference on Information and
+ * Knowledge Management  (CIKM'11).
  */
 public class BM25Similarity extends Similarity {
   public enum BM25Model {
-    CLASSIC, L
+    CLASSIC, L, PLUS
   }
 
   private final float k1;
@@ -68,7 +73,7 @@ public class BM25Similarity extends Similarity {
     if (Float.isNaN(b) || b < 0 || b > 1) {
       throw new IllegalArgumentException("illegal b value: " + b + ", must be between 0 and 1");
     }
-    if (Float.isNaN(d) || d < 0 || d > 1) {
+    if (Float.isNaN(d) || d < 0 || d > 1.5) {
       throw new IllegalArgumentException("illegal d value: " + d + ", must be between 0 and 1.5");
     }
     this.k1 = k1;
@@ -101,7 +106,7 @@ public class BM25Similarity extends Similarity {
    * <ul>
    *   <li>{@code k1 = 1.2}</li>
    *   <li>{@code b = 0.75}</li>
-   *   <li>{@code d = 0.5} for BM25L.</li>
+   *   <li>{@code d = 0.5} for BM25L, {@code d = 1.0} for BM25PLUS</li>
    * </ul>
    */
   public BM25Similarity(BM25Model model) {
@@ -109,6 +114,8 @@ public class BM25Similarity extends Similarity {
     this.b  = 0.75f;
     if (model == BM25Model.L) {
       this.d = 0.5f;
+    } else if (model == BM25Model.PLUS) {
+      this.d = 1.0f;
     } else {
       this.d  = 0;
     }
@@ -305,7 +312,11 @@ public class BM25Similarity extends Similarity {
       // if there are no norms, we act as if b=0
       float norm = norms == null ? k1 : cache[(byte)norms.get(doc) & 0xFF];
       float multInvK1_d_norm = multInvK1_d * norm;
-      return weightValue * (freq + multInvK1_d_norm) / (freq + norm + multInvK1_d_norm);
+      if (model == BM25Model.PLUS) {
+        return weightValue * freq / (freq + norm) + (d * stats.idf.getValue());
+      } else {
+        return weightValue * (freq + multInvK1_d_norm) / (freq + norm + multInvK1_d_norm);
+      }
     }
     
     @Override
@@ -384,6 +395,12 @@ public class BM25Similarity extends Similarity {
         subs.add(Explanation.match(tfNormValue, "tfNormValue, computed as d + freq / (1 - b + b * fieldLength / avgFieldLength)"));
         return Explanation.match(((k1 + 1) * tfNormValue) / (k1 + tfNormValue),
             "tfNorm, computed as ((k1 + 1) * tfNormValue) / (k1 + tfNormValue) from:", subs);
+      } else if (model == BM25Model.PLUS) {
+        subs.add(Explanation.match(d, "parameter d"));
+        float tfNormValue = freq.getValue() / (1 - b + b * doclen/stats.avgdl);
+        subs.add(Explanation.match(tfNormValue, "tfNormValue, computed as freq / (1 - b + b * fieldLength / avgFieldLength)"));
+        return Explanation.match(d + ((k1 + 1) * tfNormValue) / (k1 + tfNormValue),
+            "tfNorm, computed as d + ((k1 + 1) * tfNormValue) / (k1 + tfNormValue) from:", subs);
       } else {
         return Explanation.match(
             (freq.getValue() * (k1 + 1)) / (freq.getValue() + k1 * (1 - b + b * doclen/stats.avgdl)),
