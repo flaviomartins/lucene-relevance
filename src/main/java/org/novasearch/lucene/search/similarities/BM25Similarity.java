@@ -86,7 +86,7 @@ public class BM25Similarity extends Similarity {
    * BM25 with the supplied parameter values.
    * @param k1 Controls non-linear term frequency normalization (saturation).
    * @param b Controls to what degree document length normalizes tf values.
-   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is
+   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is 
    *         not within the range {@code [0..1]}
    */
   public BM25Similarity(float k1, float b) {
@@ -121,7 +121,7 @@ public class BM25Similarity extends Similarity {
     }
     this.model = model;
   }
-
+  
   /** BM25 with these default values:
    * <ul>
    *   <li>{@code k1 = 1.2}</li>
@@ -162,7 +162,7 @@ public class BM25Similarity extends Similarity {
       return (float) (sumTotalTermFreq / (double) docCount);
     }
   }
-
+  
   /** 
    * True if overlap tokens (tokens with a position of increment of zero) are
    * discounted from the document's length.
@@ -272,7 +272,6 @@ public class BM25Similarity extends Similarity {
     Explanation idf = termStats.length == 1 ? idfExplain(collectionStats, termStats[0]) : idfExplain(collectionStats, termStats);
     float avgdl = avgFieldLength(collectionStats);
 
-    // compute freq-independent part of bm25 equation across all norm values
     float[] oldCache = new float[256];
     float[] cache = new float[256];
     for (int i = 0; i < cache.length; i++) {

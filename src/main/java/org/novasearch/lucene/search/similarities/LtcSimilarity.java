@@ -1,11 +1,11 @@
 package org.novasearch.lucene.search.similarities;
 
-import org.apache.lucene.search.similarities.TFIDFSimilarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 
 /**
  * LtcSimilarity is based on TF-IDF with logarithmic tf weighting.
  */
-public class LtcSimilarity extends TFIDFSimilarity {
+public class LtcSimilarity extends ClassicSimilarity {
 
   /**
    * Sole constructor: parameter-free
