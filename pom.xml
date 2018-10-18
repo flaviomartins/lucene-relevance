@@ -7,7 +7,7 @@
 
     <groupId>org.novasearch</groupId>
     <artifactId>lucene-relevance</artifactId>
-    <version>7.4.0.0</version>
+    <version>7.5.0.0</version>
     <packaging>jar</packaging>
 
     <name>Lucene Relevance</name>
@@ -48,7 +48,7 @@
     </issueManagement>
 
     <properties>
-        <lucene.version>7.4.0</lucene.version>
+        <lucene.version>7.5.0</lucene.version>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
@@ -106,7 +106,7 @@
             <plugin>
                 <groupId>de.thetaphi</groupId>
                 <artifactId>forbiddenapis</artifactId>
-                <version>2.5</version>
+                <version>2.6</version>
                 <configuration>
                     <!-- disallow undocumented classes like sun.misc.Unsafe: -->
                     <internalRuntimeForbidden>true</internalRuntimeForbidden>
@@ -144,7 +144,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
-                <version>2.3</version>
+                <version>2.7</version>
                 <reportSets>
                     <reportSet>
                         <reports>
