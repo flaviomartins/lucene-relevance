@@ -17,18 +17,18 @@ public class LtcSimilarity extends ClassicSimilarity {
   }
 
   /** Implemented as
-   *  <code>1/log(length)</code>.
+   *  <code>1/sqrt(1 + log(length))</code>.
    *
    *  @lucene.experimental */
   @Override
   public float lengthNorm(int numTerms) {
-    return (float) (1.0 / Math.log(numTerms));
+    return (float) (1.0 / Math.sqrt(1 + Math.log(numTerms)));
   }
 
-  /** Implemented as <code>1 + log(freq)</code>. */
+  /** Implemented as <code>sqrt(1 + log(freq))</code>. */
   @Override
   public float tf(float freq) {
-    return 1 + (float)Math.log(freq);
+    return (float)Math.sqrt(1 + Math.log(freq));
   }
 
   @Override
