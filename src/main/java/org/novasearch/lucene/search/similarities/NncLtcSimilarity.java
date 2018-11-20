@@ -3,7 +3,6 @@ package org.novasearch.lucene.search.similarities;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 
 /**
  * Expert: TF-IDF with logarithmic tf weighting. You might want to consider using
@@ -25,7 +24,16 @@ public class NncLtcSimilarity extends TFIDFSimilarity {
     return (float) (1.0 / Math.sqrt(1 + Math.log(numTerms)));
   }
 
-  /** Implemented as <code>sqrt(1 + log(freq))</code>. */
+  /** Implemented as
+   *  <code>1/sqrt(length)</code>.
+   *
+   *  @lucene.experimental */
+  @Override
+  public float queryNorm(float numTerms) {
+    return (float) (1.0 / Math.sqrt(numTerms));
+  }
+
+  /** Implemented as <code>freq</code>. */
   @Override
   public float qtf(float freq) {
     return freq;

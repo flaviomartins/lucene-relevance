@@ -513,6 +513,14 @@ public abstract class TFIDFSimilarity extends Similarity {
    * @return a length normalization value
    */
   public abstract float lengthNorm(int length);
+
+  /**
+   * Compute an query-time normalization value for this query instance.
+   *
+   * @param length the number of terms in the query, optionally {@link #setDiscountOverlaps(boolean) discounting overlaps}
+   * @return a length normalization value
+   */
+  public abstract float queryNorm(float length);
   
   @Override
   public final long computeNorm(FieldInvertState state) {
@@ -564,7 +572,7 @@ public abstract class TFIDFSimilarity extends Similarity {
     public float score(float freq, long norm) {
       final float raw = tf(freq) * queryWeight; // compute tf(f)*weight
       float normValue = normTable[(int) (norm & 0xFF)];
-      return raw * normValue;  // normalize for field
+      return raw * normValue * queryNorm(boost);  // normalize for field
     }
 
     @Override

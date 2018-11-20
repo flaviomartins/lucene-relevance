@@ -21,6 +21,15 @@ public class LncLtcSimilarity extends TFIDFSimilarity {
    *  @lucene.experimental */
   @Override
   public float lengthNorm(int numTerms) {
+    return (float) (1.0 / (Math.sqrt(1 + Math.log(numTerms))));
+  }
+
+  /** Implemented as
+   *  <code>1/sqrt(1 + log(length))</code>.
+   *
+   *  @lucene.experimental */
+  @Override
+  public float queryNorm(float numTerms) {
     return (float) (1.0 / Math.sqrt(1 + Math.log(numTerms)));
   }
 

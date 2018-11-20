@@ -24,7 +24,16 @@ public class NncLpcSimilarity extends TFIDFSimilarity {
     return (float) (1.0 / Math.sqrt(1 + Math.log(numTerms)));
   }
 
-  /** Implemented as <code>sqrt(1 + log(freq))</code>. */
+  /** Implemented as
+   *  <code>1/sqrt(length)</code>.
+   *
+   *  @lucene.experimental */
+  @Override
+  public float queryNorm(float numTerms) {
+    return (float) (1.0 / Math.sqrt(numTerms));
+  }
+
+  /** Implemented as <code>freq</code>. */
   @Override
   public float qtf(float freq) {
     return freq;
