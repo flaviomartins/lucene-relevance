@@ -324,9 +324,10 @@ public class LdpSimilarity extends Similarity {
       subs.add(Explanation.match(stats.avgdl, "avgFieldLength"));
       subs.add(Explanation.match(doclen, "fieldLength"));
       subs.add(Explanation.match(d, "parameter d"));
+      float normValue = ((1 - b) + b * doclen / stats.avgdl);
       return Explanation.match(
-          (freq.getValue() / (1 - b + b * doclen/stats.avgdl)),
-          "tfNorm, computed as freq / (freq + (1 - b + b * fieldLength / avgFieldLength)) from:", subs);
+          (float) (1 + Math.log(1 + Math.log((freq.getValue() / (double) normValue) + d))),
+          "tf, computed as 1 + log(1 + log(freq / (1 - b + b * dl / avgdl) + d)) from:", subs);
     }
   }
 
