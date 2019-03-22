@@ -52,11 +52,11 @@ public class RobertsonSimilarity extends BM25Similarity {
   @Override
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
     final long df = termStats.docFreq();
-    final long docCount = collectionStats.docCount() == -1 ? collectionStats.maxDoc() : collectionStats.docCount();
+    final long docCount = collectionStats.docCount();
     final float idf = idf(df, docCount);
     return Explanation.match(idf, "idf, computed as log((docCount+1)/(docFreq+1)) + 1 from:",
-        Explanation.match(df, "docFreq"),
-        Explanation.match(docCount, "docCount"));
+        Explanation.match(df, "docFreq, number of documents containing term"),
+        Explanation.match(docCount, "docCount, total number of documents with field"));
   }
 
   /** Implemented as <code>log((docCount+1)/(docFreq+1)) + 1</code>. */
@@ -67,7 +67,7 @@ public class RobertsonSimilarity extends BM25Similarity {
 
   @Override
   public String toString() {
-    return "ClassicSimilarityRobertson";
+    return "RobertsonSimilarity";
   }
 }
 

@@ -3,14 +3,14 @@ package org.novasearch.lucene.search.similarities;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 
 /**
  * Expert: TF-IDF with logarithmic tf weighting. You might want to consider using
  * {@link BM25Similarity} instead, which is generally considered superior to
  * TF-IDF.
  */
-public class LtcSimilarity extends ClassicSimilarity {
+public class LtcSimilarity extends TFIDFSimilarity {
 
   /** Sole constructor: parameter-free */
   public LtcSimilarity() {
