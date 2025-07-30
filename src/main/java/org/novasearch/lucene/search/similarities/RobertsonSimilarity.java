@@ -35,18 +35,18 @@ public class RobertsonSimilarity extends BM25Similarity {
    * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is 
    *         not within the range {@code [0..1]}
    */
-  public RobertsonSimilarity(float k1, float b) {
-    super(k1, b);
+  public RobertsonSimilarity(float k1, float b, boolean discountOverlaps) {
+    super(k1, b, discountOverlaps);
   }
 
-  /** RobertsonSimilarity with these default values:
-   * <ul>
-   *   <li>{@code k1 = 1.2}</li>
-   *   <li>{@code b = 0.75}</li>
-   * </ul>
-   */
+  /** Primary constructor. */
+  public RobertsonSimilarity(boolean discountOverlaps) {
+    super(1.2f, 0.75f, discountOverlaps);
+  }
+
+  /** Default constructor: parameter-free */
   public RobertsonSimilarity() {
-    super(1.2f, 0.75f);
+    this(true);
   }
 
   @Override
@@ -54,15 +54,17 @@ public class RobertsonSimilarity extends BM25Similarity {
     final long df = termStats.docFreq();
     final long docCount = collectionStats.docCount();
     final float idf = idf(df, docCount);
-    return Explanation.match(idf, "idf, computed as log((docCount+1)/(docFreq+1)) + 1 from:",
-        Explanation.match(df, "docFreq, number of documents containing term"),
-        Explanation.match(docCount, "docCount, total number of documents with field"));
+    return Explanation.match(
+            idf,
+            "idf, computed as log((docCount+1)/(docFreq+1)) + 1 from:",
+            Explanation.match(df, "docFreq, number of documents containing term"),
+            Explanation.match(docCount, "docCount, total number of documents with field"));
   }
 
   /** Implemented as <code>log((docCount+1)/(docFreq+1)) + 1</code>. */
   @Override
   public float idf(long docFreq, long docCount) {
-    return (float)(Math.log((docCount+1)/(double)(docFreq+1)) + 1.0);
+    return (float) (Math.log((docCount + 1) / (double) (docFreq + 1)) + 1.0);
   }
 
   @Override

@@ -1,5 +1,3 @@
-package org.novasearch.solr.search.similarities;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,37 +14,40 @@ package org.novasearch.solr.search.similarities;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ package org.novasearch.solr.search.similarities;
 
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.TFIDFSimilarity; // javadoc
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
 import org.novasearch.lucene.search.similarities.LtcSimilarity;
 
 /**
  * Factory for {@link LtcSimilarity}
- * <p>
- * LtcSimilarity is based on Lucene's default scoring implementation, based
- * upon the Vector Space Model and uses logarithmic tf weighting.
- * <p>
- * Optional settings:
+ *
+ * <p>LtcSimilarity is based on Lucene's original scoring implementation, based upon the Vector Space
+ * Model and uses logarithmic tf weighting.
+ *
+ * <p>Optional settings:
+ *
  * <ul>
- *   <li>discountOverlaps (bool): Sets
- *       {@link LtcSimilarity#setDiscountOverlaps(boolean)}</li>
+ *   <li>discountOverlaps (bool): Sets {@link LtcSimilarity#getDiscountOverlaps()}.
  * </ul>
+ *
  * @see TFIDFSimilarity
  * @lucene.experimental
  */
 public class LtcSimilarityFactory extends SimilarityFactory {
 
-  /** Init param name for specifying the value to use in
-   * {@link LtcSimilarity#setDiscountOverlaps(boolean)}
+  /**
+   * Init param name for specifying the value to use in {@link
+   * LtcSimilarity#getDiscountOverlaps()}.
    */
   public static final String DISCOUNT_OVERLAPS = "discountOverlaps";
 
   /**
-   * Controls the value of {@link LtcSimilarity#setDiscountOverlaps(boolean)}
-   * on newly constructed instances of {@link LtcSimilarity}
+   * Controls the value of {@link LtcSimilarity#getDiscountOverlaps()} on newly constructed
+   * instances of {@link LtcSimilarity}
    */
   protected boolean discountOverlaps = true;
 
@@ -58,8 +59,6 @@ public class LtcSimilarityFactory extends SimilarityFactory {
 
   @Override
   public Similarity getSimilarity() {
-    LtcSimilarity sim = new LtcSimilarity();
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    return new LtcSimilarity(discountOverlaps);
   }
 }

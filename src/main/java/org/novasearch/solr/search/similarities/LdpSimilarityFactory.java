@@ -32,29 +32,21 @@ import org.novasearch.lucene.search.similarities.LdpSimilarity;
  *                  The default is <code>0.5</code>
  * </ul>
  * <p>
- * Optional settings:
- * <ul>
- *   <li>discountOverlaps (bool): Sets
- *       {@link LdpSimilarity#setDiscountOverlaps(boolean)}</li>
- * </ul>
  */
 public class LdpSimilarityFactory extends SimilarityFactory {
-  private boolean discountOverlaps;
-  private float b;
-  private float d;
+  private LdpSimilarity similarity;
 
   @Override
   public void init(SolrParams params) {
     super.init(params);
-    discountOverlaps = params.getBool("discountOverlaps", true);
-    b = params.getFloat("b", 0.75f);
-    d = params.getFloat("d", 0.5f);
+    boolean discountOverlaps = params.getBool("discountOverlaps", true);
+    float b = params.getFloat("b", 0.75f);
+    float d = params.getFloat("d", 0.5f);
+    similarity = new LdpSimilarity(b, d, discountOverlaps);
   }
 
   @Override
   public Similarity getSimilarity() {
-    LdpSimilarity sim = new LdpSimilarity(b, d);
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    return similarity;
   }
 }

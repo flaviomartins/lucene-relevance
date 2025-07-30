@@ -33,29 +33,21 @@ import org.novasearch.lucene.search.similarities.RobertsonSimilarity;
  *                  The default is <code>0.75</code>
  * </ul>
  * <p>
- * Optional settings:
- * <ul>
- *   <li>discountOverlaps (bool): Sets
- *       {@link RobertsonSimilarity#setDiscountOverlaps(boolean)}</li>
- * </ul>
  */
 public class RobertsonSimilarityFactory extends SimilarityFactory {
-  private boolean discountOverlaps;
-  private float k1;
-  private float b;
+  private RobertsonSimilarity similarity;
 
   @Override
   public void init(SolrParams params) {
     super.init(params);
-    discountOverlaps = params.getBool("discountOverlaps", true);
-    k1 = params.getFloat("k1", 1.2f);
-    b = params.getFloat("b", 0.75f);
+    boolean discountOverlaps = params.getBool("discountOverlaps", true);
+    float k1 = params.getFloat("k1", 1.2f);
+    float b = params.getFloat("b", 0.75f);
+    similarity = new RobertsonSimilarity(k1, b, discountOverlaps);
   }
 
   @Override
   public Similarity getSimilarity() {
-    RobertsonSimilarity sim = new RobertsonSimilarity(k1, b);
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    return similarity;
   }
 }
