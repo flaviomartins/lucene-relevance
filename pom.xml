@@ -46,7 +46,7 @@
 
     <properties>
         <lucene.version>9.12.2</lucene.version>
-        <solr.version>9.9.0</solr.version>
+        <solr.version>9.10.1</solr.version>
         <maven.compiler.release>11</maven.compiler.release>
     </properties>
 
